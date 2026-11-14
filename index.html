@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naafiri Item Calculator</title>
+<style>
+  :root{
+    --bg:#110a0d; --panel:#1a1014; --panel2:#23151a; --line:#472732; --rowline:#47273260; --track:#0c0709;
+    --gold:#c8aa6e; --gold2:#f0e6d2; --acc:#ff5a4f;
+    --txt:#efe6e8; --dim:#b09aa1; --good:#5ce08a; --bad:#ff6b6b;
+    --A:#ff9b3d; --B:#ff5cc4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:radial-gradient(circle at 50% -10%, #3a1520, #0a0507 60%) fixed, #0a0507;
+    color:var(--txt); font-family:"Segoe UI",system-ui,sans-serif; padding:22px; -webkit-font-smoothing:antialiased}
+  h1{font-size:24px; margin:0 0 2px; color:var(--gold2); letter-spacing:.5px}
+  h1 span{color:var(--acc)}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:16px}
+  .wrap{max-width:1180px; margin:0 auto}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px}
+  .panel h2{font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--gold);
+    margin:0 0 12px; border-bottom:1px solid var(--line); padding-bottom:8px}
+  .cols{display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:start}
+  @media(max-width:900px){ .cols{grid-template-columns:1fr} }
+
+  /* item + modifier tables */
+  table{width:100%; border-collapse:collapse}
+  .items th,.items td{padding:6px 6px; border-bottom:1px solid var(--rowline); font-size:13px; text-align:center}
+  .items th{font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--dim)}
+  .items td.iname{text-align:left; color:var(--gold2); font-weight:600; white-space:nowrap}
+  .items td.iother{font-size:11px; color:var(--dim); white-space:nowrap}
+  input[type=number]{background:var(--bg); border:1px solid var(--line); color:var(--txt);
+    border-radius:6px; padding:4px; font-size:13px; text-align:center}
+  input[type=checkbox]{width:16px;height:16px; cursor:pointer}
+  .colA input[type=checkbox]{accent-color:var(--A)} .colB input[type=checkbox]{accent-color:var(--B)}
+  th.colA,td.colA{color:var(--A)} th.colB,td.colB{color:var(--B)}
+  input:focus,select:focus{outline:none; border-color:var(--acc)}
+  .mods td,.mods th{padding:5px 8px; font-size:13px; border-bottom:1px solid var(--rowline); text-align:center}
+  .mods td.ml{text-align:left; color:var(--txt)}
+  .mods input[type=number]{width:60px}
+  .lvlbox{margin-bottom:12px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px 12px}
+  .lvlhdr{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px}
+  .lvlhdr .ll{font-size:12px; color:var(--dim); text-transform:uppercase; letter-spacing:.5px}
+  .lvlnum{font-size:24px; font-weight:800; color:var(--gold2); line-height:1}
+  .lvlnum::before{content:'Lvl '; font-size:12px; color:var(--gold); font-weight:600}
+  #level{width:100%; -webkit-appearance:none; appearance:none; height:6px; border-radius:4px;
+    background:linear-gradient(90deg,#5a2a35,var(--acc),var(--gold)); outline:none; cursor:pointer}
+  #level::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--gold2); border:2px solid var(--gold); cursor:pointer; box-shadow:0 0 5px #000a}
+  #level::-moz-range-thumb{width:18px; height:18px; border-radius:50%; background:var(--gold2);
+    border:2px solid var(--gold); cursor:pointer}
+  .lvlranks{font-size:12px; color:var(--dim); margin-top:8px; letter-spacing:.5px}
+  .lvlranks b{color:var(--gold2); font-weight:700}
+  .stkrng{width:70px; vertical-align:middle; -webkit-appearance:none; appearance:none; height:4px; border-radius:3px;
+    background:linear-gradient(90deg,var(--line),var(--gold)); outline:none; cursor:pointer}
+  .stkrng::-webkit-slider-thumb{-webkit-appearance:none; width:12px; height:12px; border-radius:50%;
+    background:var(--gold2); border:1px solid var(--gold); cursor:pointer}
+  .stkrng::-moz-range-thumb{width:12px; height:12px; border-radius:50%; background:var(--gold2); border:1px solid var(--gold); cursor:pointer}
+  .stkval{font-size:11px; color:var(--gold2); margin-left:5px; display:inline-block; min-width:18px; font-weight:600; text-align:right}
+  .shardsel{background:var(--bg); color:var(--txt); border:1px solid var(--line); border-radius:5px; padding:3px 6px; font-size:12px; cursor:pointer; max-width:100%}
+  .items tr.item-sep td.sep-label{padding:8px 0 4px; text-align:left; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--dim); border-top:1px dashed var(--line); border-bottom:none}
+
+  /* target dummy */
+  .tgtgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; align-items:center}
+  .tgtgrid .full{grid-column:1/-1}
+  .tgtgrid label{font-size:12px; color:var(--dim); display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .tgtgrid input[type=number]{width:74px}
+  .tgtnote{font-size:11px; color:var(--dim); margin-top:8px; line-height:1.5}
+  .tgtnote b{color:var(--gold2)}
+
+  /* totals */
+  .totbar{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px}
+  .tot{border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--panel2)}
+  .tot.A{border-left:3px solid var(--A)} .tot.B{border-left:3px solid var(--B)}
+  .tot .bn{font-size:11px; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px}
+  .tot.A .bn{color:var(--A)} .tot.B .bn{color:var(--B)}
+  .tot .row{display:flex; justify-content:space-between; font-size:13px; padding:2px 0}
+  .tot .row b{color:var(--gold2)}
+
+  /* source legend */
+  .srclegend{display:flex; flex-wrap:wrap; gap:14px; font-size:11px; color:var(--dim); margin-bottom:16px}
+  .srclegend span{display:flex; align-items:center; gap:5px}
+  .srclegend i{width:11px;height:11px;border-radius:2px; display:inline-block}
+  .lg{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .lg.A{background:var(--A)} .lg.B{background:var(--B)}
+
+  /* per-ability boxes */
+  .boxgrid{column-width:330px; column-gap:14px}
+  .abox{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+    break-inside:avoid; -webkit-column-break-inside:avoid; margin-bottom:14px}
+  .head{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+  .abicon{width:30px;height:30px;flex:none;border-radius:6px;border:1px solid var(--gold); background:var(--bg);
+    color:var(--gold); font-weight:800; font-size:13px; text-align:center; line-height:28px; overflow:hidden}
+  .aname{font-size:15px; font-weight:700; color:var(--gold2)}
+  .meta{font-size:11px; color:var(--dim); line-height:1.5}
+  .rankpick{display:flex; gap:4px; margin-left:auto}
+  .rankpick button{background:var(--bg); border:1px solid var(--line); color:var(--dim);
+    border-radius:5px; width:23px; height:21px; font-size:11px; cursor:pointer}
+  .rankpick button.on{background:var(--gold); color:#1a1208; border-color:var(--gold); font-weight:700}
+  .metric{margin:11px 0}
+  .mhead{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; margin-bottom:4px; gap:8px}
+  .mlabel{font-weight:600}
+  .mb{display:flex; align-items:center; gap:6px; margin:3px 0}
+  .tag{font-size:9px; width:15px; height:13px; line-height:13px; text-align:center; border-radius:3px;
+    color:#140a0d; font-weight:800; flex:none}
+  .tag.A{background:var(--A)} .tag.B{background:var(--B)}
+  .stackbar{flex:1; height:13px; background:var(--track); border-radius:3px; overflow:hidden; display:flex; min-width:0}
+  .seg{height:100%}
+  .mtot{font-size:11px; min-width:52px; text-align:right; flex:none; color:var(--gold2)}
+  .k-dmg{color:#ff6b6b} .k-heal{color:#5ce08a} .k-stat{color:#ffcc66}
+  .k-speed{color:#5cd6ff} .k-shield{color:#7fd1ff} .k-cd{color:var(--gold2)}
+  .good{color:var(--good)} .bad{color:var(--bad)} .dim{color:var(--dim)}
+  .foot{color:var(--dim); font-size:11px; margin-top:6px; line-height:1.7}
+  .hpline{font-size:11px; color:var(--dim); border-top:1px solid var(--rowline); padding-top:6px; margin-top:2px}
+  .hpline b{font-weight:700}
+  /* item icons */
+  .items .ico{width:22px;height:22px;vertical-align:middle;margin-right:7px;border-radius:4px;border:1px solid var(--line)}
+  .sico{width:16px;height:16px;vertical-align:-3px;margin-right:6px;border-radius:3px}
+  .totItems{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 10px}
+  .totItems img{width:30px;height:30px;border-radius:6px;border:1px solid var(--line)}
+  .tot.A .totItems img{border-color:var(--A)} .tot.B .totItems img{border-color:var(--B)}
+  .totItems .totIcon{position:relative; display:inline-flex; line-height:0}
+  .totItems .stk-badge{position:absolute; right:1px; bottom:0; font-size:11px; font-weight:800; color:#fff;
+    text-shadow:0 0 3px #000, 0 0 3px #000, 0 1px 2px #000; pointer-events:none; line-height:1}
+  /* showdown bars */
+  .sd-row{display:grid; grid-template-columns:140px 60px 1fr 60px; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--rowline)}
+  .sd-row:last-child{border-bottom:none}
+  .sd-label{font-size:12px; color:var(--gold2); font-weight:600}
+  .sd-val{font-size:13px; font-weight:700; white-space:nowrap}
+  .sd-val.A{color:var(--A); text-align:right}
+  .sd-val.B{color:var(--B); text-align:left}
+  .sd-track{position:relative; height:14px; background:var(--track); border-radius:3px; min-width:0}
+  .sd-track::before{content:''; position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--gold); z-index:1}
+  .sd-fill{position:absolute; top:0; bottom:0}
+  .sd-fill.A{background:var(--A); border-radius:3px 0 0 3px}
+  .sd-fill.B{background:var(--B); border-radius:0 3px 3px 0}
+  /* showdown explainer */
+  .sd-help{margin-top:12px; border-top:1px solid var(--line); padding-top:9px}
+  .sd-help summary{cursor:pointer; color:var(--gold); font-size:12px; font-weight:600; list-style:none}
+  .sd-help summary::-webkit-details-marker{display:none}
+  .sd-help summary::before{content:'\25B8'; display:inline-block; margin-right:6px; color:var(--gold); transition:transform .15s}
+  .sd-help[open] summary::before{transform:rotate(90deg)}
+  .sd-help dl{margin:9px 0 0; font-size:11px; line-height:1.55}
+  .sd-help dt{color:var(--gold2); font-weight:600; margin-top:7px}
+  .sd-help dd{margin:1px 0 0; color:var(--dim)}
+  .sd-help .note{margin-top:9px; font-size:11px; color:var(--dim); font-style:italic; border-top:1px solid var(--rowline); padding-top:7px}
+  @media(max-width:600px){
+    .sd-row{grid-template-columns:48px 1fr 48px; row-gap:2px}
+    .sd-label{grid-column:1/-1; font-size:11px; margin-bottom:2px}
+    .sd-val{font-size:12px}
+  }
+  /* mobile */
+  @media(max-width:600px){
+    body{padding:12px}
+    .panel{padding:12px 10px}
+    .totbar{grid-template-columns:1fr}
+    .cols > div{overflow-x:auto}
+    .items input[type=number]{width:42px}
+    .rankpick button{width:28px;height:26px;font-size:12px}
+    h1{font-size:20px}
+    .panel h2{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Naafiri <span>Item Calculator</span> &mdash; Build Compare</h1>
+  <div class="sub">One box per ability comparing <b style="color:var(--A)">Build A</b> vs <b style="color:var(--B)">Build B</b>. Bars are totals after the target&apos;s armor, stacked by source.</div>
+
+  <div class="panel">
+    <h2>Overall Showdown &mdash; A vs B</h2>
+    <div id="showdown"></div>
+    <details class="sd-help">
+      <summary>What goes into each row</summary>
+      <dl>
+        <dt>Poke damage</dt>
+        <dd>Total of the <em>Poke &middot; Q &rarr; Q</em> combo: both Darkin Daggers on the same target plus the Packmates that leap in (2 bites each).</dd>
+        <dt>Trade damage</dt>
+        <dd>Total of the <em>Short trade &middot; Q &rarr; E &rarr; AA &rarr; Q</em> combo, with Packmates, item procs and runes.</dd>
+        <dt>Burst damage</dt>
+        <dd>Total of the <em>Full burst &middot; W &rarr; R &rarr; AA &rarr; Q &rarr; E &rarr; AA &rarr; Q</em> combo. The Call of the Pack is active (+22% AD, +2 Packmates) and every item proc and rune fires once.</dd>
+        <dt>Sustained DPS</dt>
+        <dd>The damage rows of the <em>Sustained output / second</em> card, summed: Q + E on their effective cooldowns, basic attacks and Packmate bites.</dd>
+        <dt>Q heal / s</dt>
+        <dd>Darkin Daggers&apos; recast heal (rank base + 45% bonus AD) divided by Q&apos;s effective cooldown.</dd>
+        <dt>Durability</dt>
+        <dd>Naafiri&apos;s effective health at the selected level: Health &times; (1 + (Armor + Magic Resist) &divide; 200), i.e. the average of her effective HP against physical and magic damage. Shields and spell shields are not counted.</dd>
+        <dt>Move speed</dt>
+        <dd>Out-of-combat move speed after soft caps (340 base + boots, Youmuu&apos;s Haunt, % bonuses).</dd>
+        <dt>Gold cost</dt>
+        <dd>Total gold spent on each build. The bar fills toward the more expensive build; the number is the raw gold difference between the two (not a percent).</dd>
+      </dl>
+      <div class="note">Each bar&apos;s % = how much more the leading build does than the other ((leader &minus; loser) &divide; loser) &mdash; except Gold cost, whose number is the flat gold gap. All damage is after the target&apos;s armor, so the result changes with the target you pick.</div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <h2>Build Totals</h2>
+    <div class="totbar" id="totbar"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Items &amp; Build Selection</h2>
+    <div class="cols">
+      <div>
+        <table class="items">
+          <thead><tr><th class="colA">A</th><th class="colB">B</th><th>Item</th><th>AD</th><th>Lethality</th><th>Haste</th><th>Other</th><th>Cost</th></tr></thead>
+          <tbody id="itemBody"></tbody>
+        </table>
+      </div>
+      <div>
+        <div class="lvlbox">
+          <div class="lvlhdr"><span class="ll">Champion Level</span><span class="lvlnum" id="lvlNum">6</span></div>
+          <input type="range" id="level" min="1" max="18" value="6" aria-label="Champion level">
+          <div class="lvlranks" id="lvlRanks"></div>
+        </div>
+        <div class="lvlbox">
+          <div class="lvlhdr"><span class="ll">Target</span></div>
+          <div class="tgtgrid">
+            <label class="full">Type
+              <select id="tgt-preset" class="shardsel">
+                <option value="squishy" selected>Squishy (mage / marksman)</option>
+                <option value="bruiser">Bruiser</option>
+                <option value="tank">Tank</option>
+                <option value="custom">Custom</option>
+              </select></label>
+            <label>Armor <input type="number" id="tgt-armor" value="50" min="0"></label>
+            <label>Max HP <input type="number" id="tgt-hp" value="1100" min="1"></label>
+          </div>
+          <div class="tgtnote" id="tgtNote"></div>
+        </div>
+        <table class="mods">
+          <thead><tr><th class="ml">Per-build modifier</th><th class="colA">Build A</th><th class="colB">Build B</th></tr></thead>
+          <tbody>
+            <tr><td class="ml">Keystone (rune)</td>
+              <td class="colA"><select id="A-keystone" class="shardsel"><option value="none">none</option><option value="electro" selected>Electrocute</option><option value="fs">First Strike</option><option value="conq">Conqueror</option></select></td>
+              <td class="colB"><select id="B-keystone" class="shardsel"><option value="none">none</option><option value="electro" selected>Electrocute</option><option value="fs">First Strike</option><option value="conq">Conqueror</option></select></td></tr>
+            <tr><td class="ml">Sudden Impact (rune)</td><td class="colA"><input type="checkbox" id="A-si"></td><td class="colB"><input type="checkbox" id="B-si"></td></tr>
+            <tr><td class="ml">Stat shards (rune)</td>
+              <td class="colA"><select id="A-shards" class="shardsel"><option value="none">none</option><option value="adad" selected>AD + AD</option><option value="adms">AD + MS</option><option value="cdms">CD + MS</option><option value="cdad">CD + AD</option></select></td>
+              <td class="colB"><select id="B-shards" class="shardsel"><option value="none">none</option><option value="adad" selected>AD + AD</option><option value="adms">AD + MS</option><option value="cdms">CD + MS</option><option value="cdad">CD + AD</option></select></td></tr>
+            <tr id="row-hubris"><td class="ml">Hubris stacks (Eminence)</td>
+              <td class="colA"><input type="range" id="A-hubris-stacks" value="0" min="0" max="15" class="stkrng"><span id="A-hubris-stacks-val" class="stkval">0</span></td>
+              <td class="colB"><input type="range" id="B-hubris-stacks" value="0" min="0" max="15" class="stkrng"><span id="B-hubris-stacks-val" class="stkval">0</span></td></tr>
+            <tr id="row-voltaic"><td class="ml">Voltaic Energized ready</td><td class="colA"><input type="checkbox" id="A-voltaic-on"></td><td class="colB"><input type="checkbox" id="B-voltaic-on"></td></tr>
+            <tr id="row-glaive"><td class="ml">Glaive Nightstalker (unseen)</td><td class="colA"><input type="checkbox" id="A-glaive-on"></td><td class="colB"><input type="checkbox" id="B-glaive-on"></td></tr>
+            <tr><td class="ml">Other AD</td><td class="colA"><input type="number" id="A-other-ad" value="0"></td><td class="colB"><input type="number" id="B-other-ad" value="0"></td></tr>
+            <tr><td class="ml">Other Lethality</td><td class="colA"><input type="number" id="A-other-leth" value="0"></td><td class="colB"><input type="number" id="B-other-leth" value="0"></td></tr>
+            <tr><td class="ml">Other Haste</td><td class="colA"><input type="number" id="A-other-ah" value="0"></td><td class="colB"><input type="number" id="B-other-ah" value="0"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Ability Comparison &mdash; A vs B (at selected ranks)</h2>
+    <div class="srclegend">
+      <span><i style="background:#5d6b85"></i>Base</span>
+      <span><i style="background:#e5484d"></i>AD ratio</span>
+      <span><i style="background:#a78bfa"></i>Packmates</span>
+      <span><i style="background:#5ce08a"></i>Item</span>
+      <span><i style="background:#c2cbd6"></i>Cooldown</span>
+      <span style="margin-left:auto"><span class="lg A"></span>&nbsp;A&nbsp;&nbsp;<span class="lg B"></span>&nbsp;B</span>
+    </div>
+    <div id="compare"></div>
+    <div class="foot">
+      Damage is physical and shown <b>after the target&apos;s armor</b>: armor &times; (1 &minus; Black Cleaver) &times; (1 &minus; % pen) &minus; Lethality, then &times; 100 &divide; (100 + armor). Packmates are assumed to use Naafiri&apos;s armor penetration. These boxes show the ability alone &mdash; item procs and runes are added in the combos below.
+      Eff. CD = base &divide; (1 + Haste/100). Hover any bar segment for its exact value. &Delta; = gap to the leading build (<span style="color:var(--A)">orange = A</span>, <span style="color:var(--B)">magenta = B</span>).
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Combos &amp; Sustained Output</h2>
+    <div class="srclegend" style="margin-bottom:12px">
+      <span><i style="background:#5d6b85"></i>Base</span>
+      <span><i style="background:#e5484d"></i>AD ratio</span>
+      <span><i style="background:#e8d9b0"></i>Basic attacks</span>
+      <span><i style="background:#a78bfa"></i>Packmates</span>
+      <span><i style="background:#5ce08a"></i>Item procs</span>
+      <span><i style="background:#5cd6ff"></i>Runes</span>
+    </div>
+    <div id="combos"></div>
+    <div class="foot">
+      Numbers from patch 26.22 (League wiki + Data Dragon 16.22.1). Simplifications: every skillshot hits, Packmates survive and land the stated number of bites, Black Cleaver stacks build up hit by hit, Conqueror stacks build up during a combo (2 per attack or ability), First Strike covers the whole combo, and Voltaic&apos;s +15 Lethality lasts for the rest of the combo.
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- data (patch 26.22) ----
+// tier: 'L' = legendary (counts toward the auto level), 'C' = starter / component, boots:true = boots
+const ITEMS = [
+  {id:'hubris',   name:'Hubris',               ad:55, leth:18, ah:10, cost:2800, iid:'6697', tier:'L', stacks:true, other:'+AD on takedown'},
+  {id:'profane',  name:'Profane Hydra',        ad:55, leth:18, ah:10, cost:2850, iid:'6698', tier:'L', other:'active 80% AD'},
+  {id:'youmuu',   name:"Youmuu's Ghostblade",  ad:55, leth:18, ah:0,  cost:2800, iid:'3142', tier:'L', ms:4, other:'4% MS &middot; +20 MS ooc'},
+  {id:'voltaic',  name:'Voltaic Cyclosword',   ad:55, leth:10, ah:10, cost:3000, iid:'6699', tier:'L', other:'9% cur. HP &middot; +15 leth'},
+  {id:'bastion',  name:'Bastionbreaker',       ad:55, leth:18, ah:15, cost:3000, iid:'2520', tier:'L', other:'true dmg proc'},
+  {id:'glaive',   name:'Umbral Glaive',        ad:60, leth:18, ah:15, cost:2800, iid:'3179', tier:'L', other:'true dmg from unseen'},
+  {id:'axiom',    name:'Axiom Arc',            ad:55, leth:18, ah:20, cost:2750, iid:'6696', tier:'L', other:'R refund'},
+  {id:'eon',      name:'Edge of Night',        ad:50, leth:15, ah:0,  cost:3000, iid:'3814', tier:'L', hp:250, other:'250 HP &middot; spell shield'},
+  {id:'serpent',  name:"Serpent's Fang",       ad:55, leth:15, ah:0,  cost:2500, iid:'6695', tier:'L', other:'shield reave'},
+  {id:'collector',name:'The Collector',        ad:50, leth:10, ah:0,  cost:3000, iid:'6676', tier:'L', crit:25, other:'25% crit &middot; execute 5%'},
+  {id:'serylda',  name:"Serylda's Grudge",     ad:45, leth:0,  ah:15, cost:3000, iid:'6694', tier:'L', pen:35, other:'35% armor pen'},
+  {id:'eclipse',  name:'Eclipse',              ad:60, leth:0,  ah:15, cost:2900, iid:'6692', tier:'L', other:'8% max HP &middot; shield'},
+  {id:'cleaver',  name:'Black Cleaver',        ad:45, leth:0,  ah:20, cost:3000, iid:'3071', tier:'L', hp:400, other:'400 HP &middot; &minus;30% armor'},
+  {id:'hunger',   name:'Endless Hunger',       ad:65, leth:0,  ah:0,  cost:3100, iid:'2517', tier:'L', other:'haste = 5 + 13% bonus AD'},
+  {id:'dd',       name:"Death's Dance",        ad:60, leth:0,  ah:15, cost:3300, iid:'6333', tier:'L', armor:50, other:'50 armor'},
+  {id:'maw',      name:'Maw of Malmortius',    ad:60, leth:0,  ah:15, cost:3100, iid:'3156', tier:'L', mr:40, other:'40 MR'},
+  {id:'ga',       name:'Guardian Angel',       ad:55, leth:0,  ah:0,  cost:3200, iid:'3026', tier:'L', armor:45, other:'45 armor &middot; revive'},
+  {id:'dblade',   name:"Doran's Blade",        ad:10, leth:0,  ah:0,  cost:450,  iid:'1055', tier:'C', hp:80, other:'80 HP'},
+  {id:'lsword',   name:'Long Sword',           ad:10, leth:0,  ah:0,  cost:350,  iid:'1036', tier:'C'},
+  {id:'dirk',     name:'Serrated Dirk',        ad:20, leth:10, ah:0,  cost:1000, iid:'3134', tier:'C'},
+  {id:'brutal',   name:'The Brutalizer',       ad:25, leth:5,  ah:10, cost:1337, iid:'2020', tier:'C'},
+  {id:'ionian',   name:'Ionian Boots of Lucidity', ad:0, leth:0, ah:10, cost:900,  iid:'3158', boots:true, ms_flat:45, other:'45 MS'},
+  {id:'steelcaps',name:'Plated Steelcaps',     ad:0,  leth:0,  ah:0,  cost:1200, iid:'3047', boots:true, ms_flat:45, armor:25, other:'45 MS &middot; 25 armor'},
+  {id:'mercs',    name:"Mercury's Treads",     ad:0,  leth:0,  ah:0,  cost:1250, iid:'3111', boots:true, ms_flat:45, mr:20, other:'45 MS &middot; 20 MR'},
+  {id:'swift',    name:'Boots of Swiftness',   ad:0,  leth:0,  ah:0,  cost:1000, iid:'3009', boots:true, ms_flat:55, other:'55 MS'},
+];
+const DEF = {
+  A:{profane:1},
+  B:{voltaic:1},
+};
+// All AD ratios are bonus AD.
+const ABILITIES = {
+  Q:{key:'Q', name:'Darkin Daggers', ranks:5, mana:[50,60,70,80,90], cd:[9,8.5,8,7.5,7],
+     dmg:{base:[35,40,45,50,55], ad:0.2},            // dagger hit
+     bleed:{base:[35,60,85,110,135], ad:0.8},        // total over 5s (10 ticks)
+     bonus:{base:[30,42.5,55,67.5,80], ad:0.4},      // recast on a bleeding target: base x(1+missing%), ratio x(1+2.5*missing%)
+     heal:{base:[55,70,85,100,115], ad:0.45}},
+  W:{key:'W', name:'The Call of the Pack', ranks:5, mana:[60,60,60,60,60], cd:[26,24,22,20,18],
+     adPct:0.22, ms:[20,22.5,25,27.5,30], extraPack:2},
+  E:{key:'E', name:'Eviscerate', ranks:5, mana:[40,40,40,40,40], cd:[11,10,9,8,7],
+     dash:{base:[15,25,35,45,55], ad:0.4}, flurry:{base:[60,85,110,135,160], ad:0.8}},
+  R:{key:'R', name:"Hounds' Pursuit", ranks:3, mana:[100,100,100], cd:[110,95,80],
+     dmg:{base:[125,200,275], ad:1.0}, packPct:0.10, shield:{base:[100,150,200], ad:1.5}},
+};
+const sel = {Q:3, W:1, E:1, R:1};
+const SRC = {base:'#5d6b85', ad:'#e5484d', aa:'#e8d9b0', pack:'#a78bfa', item:'#5ce08a', rune:'#5cd6ff'};
+const SRCNAME = {base:'Base', ad:'AD ratio', aa:'Basic attacks', pack:'Packmates', item:'Item procs', rune:'Runes'};
+const SRCORDER = ['base','ad','aa','pack','item','rune'];
+const DDV = '16.22.1';
+const ICON = 'https://ddragon.leagueoflegends.com/cdn/'+DDV+'/img/item/';
+const iconUrl = it => ICON + it.iid + '.png';
+const DDIMG = 'https://ddragon.leagueoflegends.com/cdn/'+DDV+'/img/';
+const PERK = 'https://ddragon.leagueoflegends.com/cdn/img/perk-images/';
+// Riot's internal spell slots for Naafiri are swapped: NaafiriR.png is W (The Call of the Pack), NaafiriW.png is R (Hounds' Pursuit).
+const ABICON = { P:DDIMG+'passive/Icons_Naafiri_P.png', Q:DDIMG+'spell/NaafiriQ.png', W:DDIMG+'spell/NaafiriR.png', E:DDIMG+'spell/NaafiriE.png', R:DDIMG+'spell/NaafiriW.png' };
+const HIDEIMG = `onerror="this.style.display='none'"`;
+
+// ---- helpers ----
+const $ = id => document.getElementById(id);
+const num = id => { const v=parseFloat($(id).value); return isNaN(v)?0:v; };
+const chk = id => $(id).checked;
+const r0 = n => Math.round(n);
+const r1 = n => Math.round(n*10)/10;
+const clampL = L => Math.max(1,Math.min(18,Math.round(L)||1));
+const lvlScale = (lo,hi,L) => lo + (hi-lo)*(clampL(L)-1)/17;
+// Riot's stat growth curve
+const growth = L => (clampL(L)-1)*(0.7025+0.0175*(clampL(L)-1));
+const NAAFIRI = {hp:610, hpL:105, ad:55, adL:2, armor:28, armorL:4.2, mr:32, mrL:2.05, as:0.663, asRatio:0.625, asL:2.1, ms:340};
+const packCount = L => { L=clampL(L); return L>=15?5 : L>=12?4 : L>=9?3 : 2; };
+const packBase  = L => lvlScale(10,20,L);          // Packmate bite: 10-20 (+4% bonus AD)
+const PACK_AD = 0.04, PREY = 1.3;                  // Prey Drive: +30% on the bite after an ability cast (stores 3)
+const CRIT_BONUS = 0.75;                           // crits deal 175%
+
+function totals(b, L){
+  let ad=0, leth=0, ah=0, cost=0, ms=0, msFlat=0, hp=0, armor=0, mr=0, crit=0, keep=1;
+  const has = id => chk(b+'-en-'+id);
+  ITEMS.forEach(it=>{
+    if(has(it.id)){
+      ad+=it.ad; leth+=it.leth||0; ah+=it.ah||0; cost+=it.cost;
+      ms+=it.ms||0; msFlat+=it.ms_flat||0; hp+=it.hp||0; armor+=it.armor||0; mr+=it.mr||0; crit+=it.crit||0;
+      if(it.pen) keep*=(1-it.pen/100);
+    }
+  });
+  ad+=num(b+'-other-ad'); leth+=num(b+'-other-leth'); ah+=num(b+'-other-ah');
+  // Stat shards: each Adaptive Force shard = 9 adaptive = 5.4 AD, Ability Haste = +8, Move Speed = +2.5%.
+  const shards = $(b+'-shards').value;
+  if(shards==='adad')      { ad += 10.8; }
+  else if(shards==='adms') { ad += 5.4; ms += 2.5; }
+  else if(shards==='cdms') { ah += 8;   ms += 2.5; }
+  else if(shards==='cdad') { ad += 5.4; ah += 8; }
+  // Hubris "Eminence": 15 (+3 per stack) bonus AD for 90s after a takedown (melee values).
+  const hubrisStacks = has('hubris') ? num(b+'-hubris-stacks') : 0;
+  if(hubrisStacks>0) ad += 15 + 3*hubrisStacks;
+  // Youmuu's "Haunt": +20 move speed out of combat (melee).
+  if(has('youmuu')) msFlat += 20;
+  // Endless Hunger "Famine": 5 (+13% bonus AD) ability haste (melee).
+  if(has('hunger')) ah += 5 + 0.13*ad;
+  const g = growth(L);
+  const baseAD = NAAFIRI.ad + NAAFIRI.adL*g;
+  const as = NAAFIRI.as + NAAFIRI.asRatio*(NAAFIRI.asL*g/100);
+  const maxHP = NAAFIRI.hp + NAAFIRI.hpL*g + hp;
+  const totArmor = NAAFIRI.armor + NAAFIRI.armorL*g + armor;
+  const totMR = NAAFIRI.mr + NAAFIRI.mrL*g + mr;
+  // Move Speed: (base + flat) x (1 + sum of %), then soft caps.
+  const rawMS = (NAAFIRI.ms + msFlat) * (1 + ms/100);
+  let finalMS;
+  if(rawMS > 490)      finalMS = rawMS * 0.5 + 230;
+  else if(rawMS > 415) finalMS = rawMS * 0.8 + 83;
+  else finalMS = rawMS;
+  return { bad:ad, baseAD, ad:baseAD+ad, leth, pen:1-keep, ah, cost, ms, msFlat, rawMS, finalMS, crit:Math.min(100,crit), as,
+    hp:maxHP, armor:totArmor, mr:totMR, ehp:maxHP*(1+(totArmor+totMR)/200),
+    keystone:$(b+'-keystone').value, si:chk(b+'-si'),
+    profane:has('profane'), voltaic:has('voltaic') && chk(b+'-voltaic-on'), bastion:has('bastion'),
+    glaive:has('glaive') && chk(b+'-glaive-on'), eclipse:has('eclipse'), collector:has('collector'),
+    cleaver:has('cleaver'), axiom:has('axiom') };
+}
+
+// ---- target dummy ----
+const TGT = {
+  squishy:{label:'Squishy', hp:L=>600+100*growth(L),            armor:L=>24+4.5*growth(L)},
+  bruiser:{label:'Bruiser', hp:L=>(650+110*growth(L))*1.35,     armor:L=>34+4.8*growth(L)+3*clampL(L)},
+  tank:   {label:'Tank',    hp:L=>(650+110*growth(L))*1.6,      armor:L=>36+5*growth(L)+8*clampL(L)},
+};
+function target(L){
+  const p = $('tgt-preset').value;
+  if(TGT[p]){ $('tgt-armor').value = r0(TGT[p].armor(L)); $('tgt-hp').value = r0(TGT[p].hp(L)); }
+  return {armor:Math.max(0,num('tgt-armor')), hp:Math.max(1,num('tgt-hp')), preset:p};
+}
+// armor the build actually hits, and the resulting damage multiplier
+const effArmor = (T, tgt, cleave, bonusLeth) =>
+  Math.max(0, tgt.armor*(1-0.06*(cleave||0))*(1-T.pen) - (T.leth+(bonusLeth||0)));
+const mitMult = (T, tgt, cleave, bonusLeth) => 100/(100+effArmor(T,tgt,cleave,bonusLeth));
+
+// ---- build item table ----
+let _sep = {};
+ITEMS.forEach(it=>{
+  const group = it.boots ? 'Boots' : it.tier==='C' ? 'Starter &amp; components' : null;
+  if(group && !_sep[group]){
+    const sep = document.createElement('tr');
+    sep.className = 'item-sep';
+    sep.innerHTML = `<td colspan="8" class="sep-label">${group}</td>`;
+    $('itemBody').appendChild(sep);
+    _sep[group] = true;
+  }
+  const dash = '<span class="dim">&mdash;</span>';
+  const tr=document.createElement('tr');
+  tr.innerHTML = `
+    <td class="colA"><input type="checkbox" id="A-en-${it.id}" aria-label="Build A: ${it.name}"></td>
+    <td class="colB"><input type="checkbox" id="B-en-${it.id}" aria-label="Build B: ${it.name}"></td>
+    <td class="iname"><img class="ico" src="${iconUrl(it)}" alt="" loading="lazy" ${HIDEIMG}>${it.name}</td>
+    <td>${it.ad||dash}</td>
+    <td>${it.leth||dash}</td>
+    <td>${it.ah||dash}</td>
+    <td class="iother">${it.other||dash}</td>
+    <td class="dim">${it.cost.toLocaleString()}</td>`;
+  $('itemBody').appendChild(tr);
+});
+['A','B'].forEach(b=> ITEMS.forEach(it=>{ $(b+'-en-'+it.id).checked = !!DEF[b][it.id]; }));
+['A','B'].forEach(b=>{ $(b+'-si').checked = true; $(b+'-voltaic-on').checked = true; $(b+'-glaive-on').checked = true; });
+
+// ---- build totals panel ----
+const STATROWS = [
+  ['tad',  'Attack Damage',        PERK+'StatMods/StatModsAdaptiveForceIcon.png'],
+  ['tleth','Lethality',            PERK+'Styles/Domination/SuddenImpact/SuddenImpact.png'],
+  ['tpen', 'Armor Penetration',    PERK+'Styles/Precision/CutDown/CutDown.png'],
+  ['tah',  'Ability Haste',        PERK+'StatMods/StatModsCDRScalingIcon.png'],
+  ['tms',  'Move Speed',           PERK+'StatMods/StatModsMovementSpeedIcon.png'],
+  ['thp',  'Health',               PERK+'StatMods/StatModsHealthPlusIcon.png'],
+  ['tres', 'Armor / Magic Resist', PERK+'StatMods/StatModsArmorIcon.png'],
+];
+$('totbar').innerHTML = ['A','B'].map(k=>`<div class="tot ${k}"><div class="bn">Build ${k} totals</div>
+  <div id="${k}-items" class="totItems"></div>
+  ${STATROWS.map(([id,label,ic])=>`<div class="row"><span><img class="sico" src="${ic}" alt="" ${HIDEIMG}>${label}</span><b id="${k}-${id}">0</b></div>`).join('')}
+  <div class="row"><span>Total Cost</span><b id="${k}-tcost" style="color:var(--gold)">0</b></div></div>`).join('');
+
+// ---- combo simulator ----
+// Walks a list of steps against the target, tracking its health so that missing-health
+// and current-health effects (Q recast, Voltaic, Collector) use the right value.
+// steps: 'W' | 'Q' | 'tick:n' (bleed ticks) | 'E' | 'R' | 'AA' | 'H' (Profane active) | 'P:n' (n bites per Packmate)
+// o: {procs:false -> no item procs / runes, hunt:true -> W already active, packs:n -> override Packmate count, hpPct -> starting health}
+function sim(T, L, tgt, steps, o){
+  o = o||{};
+  const procs = o.procs!==false;
+  const Q=ABILITIES.Q, E=ABILITIES.E, R=ABILITIES.R, W=ABILITIES.W;
+  const qi=sel.Q-1, ei=sel.E-1, ri=sel.R-1;
+  const maxHP = tgt.hp, startHP = maxHP*(o.hpPct==null?1:o.hpPct);
+  let hp=startHP, hunt=!!o.hunt, cleave=0, conq=0, bonusLeth=0, prey=0, bleedTicks=0;
+  let electro=0, electroDone=false, ecl=0, eclDone=false, siArmed=false, siDone=false;
+  let voltDone=false, bastDone=false, glaiveDone=false, collected=false;
+  const acc={}, heal=[], shd=[];
+  const fs = procs && T.keystone==='fs';
+  const conqAD = () => (procs && T.keystone==='conq') ? conq*0.6*lvlScale(1.8,4,L) : 0;
+  const bAD = () => { const b=T.bad+conqAD(); return hunt ? b + W.adPct*(T.baseAD+b) : b; };
+  const AD  = () => T.baseAD + bAD();
+  const packN = () => o.packs!=null ? o.packs : packCount(L) + (hunt ? W.extraPack : 0);
+  const mit = () => mitMult(T, tgt, T.cleaver?cleave:0, bonusLeth);
+  function dmg(parts, isTrue){
+    const m = isTrue ? 1 : mit();
+    parts.forEach(p=>{
+      const v = p.v*m; if(!(v>0)) return;
+      acc[p.k] = (acc[p.k]||0) + v; hp -= v;
+      if(fs){ acc.rune = (acc.rune||0) + v*0.07; hp -= v*0.07; }   // First Strike: +7% as true damage
+    });
+    // The Collector: executes below 5% max health
+    if(procs && T.collector && !collected && hp>0 && hp<=0.05*maxHP){ acc.item=(acc.item||0)+hp; hp=0; collected=true; }
+  }
+  // effects that trigger off a hit. kind: 'aa' | 'ab' | 'item'; newCast = first damage of a cast instance
+  function after(kind, newCast){
+    if(T.cleaver) cleave = Math.min(5, cleave+1);
+    if(!procs) return;
+    if(newCast){
+      if(kind!=='item') conq = Math.min(12, conq+2);
+      if(T.keystone==='electro' && !electroDone && ++electro>=3){ electroDone=true; dmg([{k:'rune', v:60+10*clampL(L)+0.10*bAD()}]); }
+      if(T.eclipse && !eclDone && ++ecl>=2){ eclDone=true; dmg([{k:'item', v:0.08*maxHP}]); shd.push({k:'item', v:150+0.40*bAD(), t:'Eclipse shield'}); }
+    }
+    if(T.si && siArmed && !siDone){ siDone=true; dmg([{k:'rune', v:lvlScale(20,80,L)}], true); }
+    if(kind!=='item' && T.voltaic && !voltDone){ voltDone=true; bonusLeth+=15; dmg([{k:'item', v:0.09*Math.max(0,hp)}]); }
+    if(kind==='ab' && T.bastion && !bastDone){ bastDone=true; dmg([{k:'item', v:40+1.5*(T.leth+bonusLeth)}], true); }
+    if(kind==='aa' && T.glaive && !glaiveDone){ glaiveDone=true; dmg([{k:'item', v:50+1.5*(T.leth+bonusLeth)}], true); }
+  }
+  const cast = () => { prey = Math.min(3, prey+1); };
+  steps.forEach(s=>{
+    const parts = s.split(':'), op = parts[0], n = parts[1] ? parseInt(parts[1]) : 1;
+    if(op==='W'){ hunt = true; cast(); }
+    else if(op==='Q'){
+      cast();
+      if(bleedTicks>0){
+        // recast on a bleeding target: remaining bleed + bonus scaled by missing health (measured before the bleed lands)
+        const miss = Math.max(0, Math.min(1, 1-hp/maxHP)), rem = bleedTicks/10;
+        dmg([{k:'base', v:Q.bonus.base[qi]*(1+miss) + Q.bleed.base[qi]*rem},
+             {k:'ad',   v:(Q.bonus.ad*(1+2.5*miss) + Q.bleed.ad*rem)*bAD()}]);
+        bleedTicks = 0;
+        heal.push({k:'base', v:Q.heal.base[qi], t:'Base heal'}, {k:'ad', v:Q.heal.ad*bAD(), t:'AD ratio'});
+      } else {
+        dmg([{k:'base', v:Q.dmg.base[qi]}, {k:'ad', v:Q.dmg.ad*bAD()}]);
+        bleedTicks = 10;
+      }
+      after('ab', true);
+    }
+    else if(op==='tick'){
+      const k = Math.min(n, bleedTicks);
+      for(let i=0;i<k;i++){
+        dmg([{k:'base', v:Q.bleed.base[qi]/10}, {k:'ad', v:Q.bleed.ad*bAD()/10}]);
+        if(T.cleaver) cleave = Math.min(5, cleave+1);
+      }
+      bleedTicks -= k;
+    }
+    else if(op==='E'){
+      cast(); siArmed = true;
+      dmg([{k:'base', v:E.dash.base[ei]}, {k:'ad', v:E.dash.ad*bAD()}]);     after('ab', true);
+      dmg([{k:'base', v:E.flurry.base[ei]}, {k:'ad', v:E.flurry.ad*bAD()}]); after('ab', false);
+    }
+    else if(op==='R'){
+      cast(); siArmed = true;
+      dmg([{k:'base', v:R.dmg.base[ri]}, {k:'ad', v:R.dmg.ad*bAD()}]); after('ab', true);
+      const pn = packN();
+      if(pn>0) dmg([{k:'pack', v:pn*R.packPct*(R.dmg.base[ri]+R.dmg.ad*bAD())}]);
+    }
+    else if(op==='AA'){
+      dmg([{k:'aa', v:AD()*(1+T.crit/100*CRIT_BONUS)}]); after('aa', true);
+    }
+    else if(op==='H'){
+      if(procs && T.profane){ dmg([{k:'item', v:0.80*AD()}]); after('item', true); }
+    }
+    else if(op==='P'){
+      const pn = packN();
+      for(let i=0;i<n;i++){
+        const emp = prey>0; if(emp) prey--;
+        dmg([{k:'pack', v:pn*(packBase(L)+PACK_AD*bAD())*(emp?PREY:1)}]);
+      }
+    }
+  });
+  const segs = SRCORDER.filter(k=>acc[k]>0).map(k=>({k, v:acc[k], t:SRCNAME[k]}));
+  const sum = a => a.reduce((x,y)=>x+y.v,0);
+  return {dmg:segs, heal, shd, dmgT:sum(segs), healT:sum(heal), shdT:sum(shd), pct:sum(segs)/startHP*100};
+}
+
+// ---- bar + metric builders ----
+const sum = segs => segs.reduce((a,s)=>a+s.v,0);
+function bar(segs, scale, f){
+  return `<div class="stackbar">`+segs.filter(s=>s.v>0).map(s=>
+    `<div class="seg" style="width:${Math.max(0,Math.min(100,s.v/scale*100))}%;background:${s.c||SRC[s.k]||'#5d6b85'}" title="${s.t||SRCNAME[s.k]||s.k}: ${(f||r1)(s.v)}"></div>`
+  ).join('')+`</div>`;
+}
+function metric(label, klass, aSegs, bSegs, o){
+  o=o||{}; const f=o.fmt||r0, u=o.unit||'', dir=o.dir||1;
+  const aT=sum(aSegs), bT=sum(bSegs), scale=Math.max(aT,bT,1e-6);
+  const d=bT-aT;
+  const dStr = Math.abs(d)<1e-9 ? '<span class="dim">&mdash;</span>'
+    : `<span style="color:${d*dir>0?'var(--B)':'var(--A)'};font-weight:700">&Delta;${f(Math.abs(d))}${u}</span>`;
+  return `<div class="metric">
+    <div class="mhead"><span class="mlabel ${klass}">${label}</span><span>${dStr}</span></div>
+    <div class="mb"><span class="tag A">A</span>${bar(aSegs,scale)}<span class="mtot">${f(aT)}${u}</span></div>
+    <div class="mb"><span class="tag B">B</span>${bar(bSegs,scale)}<span class="mtot">${f(bT)}${u}</span></div>
+  </div>`;
+}
+function metricCD(baseCD, ahA, ahB, label){
+  const eA=baseCD/(1+ahA/100), eB=baseCD/(1+ahB/100);
+  const cd = e => [{k:'cd', v:e, c:'#c2cbd6', t:'Cooldown'}];
+  return metric((label||'Cooldown')+' <span class="dim" style="font-weight:400">(&darr; better)</span>', 'k-cd', cd(eA), cd(eB), {fmt:r1, unit:'s', dir:-1});
+}
+function rankPicker(ab){
+  if(!ab.ranks) return '';
+  let p='<div class="rankpick">';
+  for(let r=1;r<=ab.ranks;r++) p+=`<button data-ab="${ab.key}" data-r="${r}" class="${sel[ab.key]===r?'on':''}" aria-label="${ab.key} rank ${r}">${r}</button>`;
+  return p+'</div>';
+}
+function box(key,name,meta,picker,body){
+  return `<div class="abox"><div class="head"><img class="abicon" src="${ABICON[key]}" alt="${key}" title="${key}">
+    <div><div class="aname">${name}</div><div class="meta">${meta}</div></div>${picker}</div>${body}</div>`;
+}
+
+// ---- per-ability boxes (ability alone: no item procs / runes) ----
+const solo = (T,L,tgt,steps,o) => sim(T,L,tgt,steps,Object.assign({procs:false},o||{})).dmg;
+
+function passiveBox(A,B,L,tgt){
+  const n = packCount(L);
+  const bite = (T,m) => { const k=mitMult(T,tgt)*m; return [{k:'base',v:packBase(L)*k},{k:'ad',v:PACK_AD*T.bad*k}]; };
+  return box('P','We Are More',`${n} Packmates at level ${clampL(L)} (+2 during W) &middot; they bite at Naafiri&apos;s attack speed (${A.as.toFixed(2)}/s)`,'',
+    metric('Packmate bite','k-dmg', bite(A,1), bite(B,1), {fmt:r1})
+   +metric('Packmate bite &middot; Prey Drive (+30%)','k-dmg', bite(A,PREY), bite(B,PREY), {fmt:r1})
+   +metric(`Pack damage / s &middot; ${n} Packmates`,'k-dmg', bite(A,n*A.as), bite(B,n*B.as), {fmt:r1}));
+}
+function qBox(A,B,L,tgt){
+  const ab=ABILITIES.Q, i=sel.Q-1;
+  const heal = T => [{k:'base',v:ab.heal.base[i]},{k:'ad',v:ab.heal.ad*T.bad}];
+  return box('Q',ab.name,'Bleed over 5s &middot; recast deals the remaining bleed + a bonus that grows with missing health &middot; Mana '+ab.mana[i],rankPicker(ab),
+    metric('Damage &middot; one dagger (hit + full bleed)','k-dmg', solo(A,L,tgt,['Q','tick:10']), solo(B,L,tgt,['Q','tick:10']))
+   +metric('Damage &middot; both daggers &middot; target at 100% HP','k-dmg', solo(A,L,tgt,['Q','tick:2','Q']), solo(B,L,tgt,['Q','tick:2','Q']))
+   +metric('Damage &middot; both daggers &middot; target at 40% HP','k-dmg', solo(A,L,tgt,['Q','tick:2','Q'],{hpPct:0.4}), solo(B,L,tgt,['Q','tick:2','Q'],{hpPct:0.4}))
+   +metric('Heal &middot; recast on a bleeding champion','k-heal', heal(A), heal(B))
+   +metricCD(ab.cd[i],A.ah,B.ah));
+}
+function wBox(A,B,L){
+  const ab=ABILITIES.W, i=sel.W-1, n=packCount(L);
+  const adSeg = T => [{k:'base',v:ab.adPct*T.baseAD,t:'22% of base AD'},{k:'ad',v:ab.adPct*T.bad,t:'22% of bonus AD'}];
+  const ms = [{k:'base',v:ab.ms[i],t:'Move speed'}];
+  return box('W',ab.name,`Untargetable 1s &middot; hunt lasts 5s &middot; +2 Packmates (${n} &rarr; ${n+2}) &middot; Mana ${ab.mana[i]}`,rankPicker(ab),
+    metric('Bonus AD while hunting (22% AD)','k-stat', adSeg(A), adSeg(B), {fmt:r1})
+   +metric('Bonus move speed','k-speed', ms, ms, {fmt:r1,unit:'%'})
+   +metricCD(ab.cd[i],A.ah,B.ah));
+}
+function eBox(A,B,L,tgt){
+  const ab=ABILITIES.E, i=sel.E-1;
+  const part = (T,p) => { const m=mitMult(T,tgt); return [{k:'base',v:p.base[i]*m},{k:'ad',v:p.ad*T.bad*m}]; };
+  return box('E',ab.name,'Dash, then a flurry around Naafiri &middot; Packmates return at full health &middot; Mana '+ab.mana[i],rankPicker(ab),
+    metric('Damage &middot; dash','k-dmg', part(A,ab.dash), part(B,ab.dash))
+   +metric('Damage &middot; dash + flurry','k-dmg', solo(A,L,tgt,['E']), solo(B,L,tgt,['E']))
+   +metricCD(ab.cd[i],A.ah,B.ah));
+}
+function rBox(A,B,L,tgt){
+  const ab=ABILITIES.R, i=sel.R-1, n=packCount(L);
+  const shield = T => [{k:'base',v:ab.shield.base[i]},{k:'ad',v:ab.shield.ad*T.bad}];
+  let body =
+    metric('Damage &middot; Naafiri only','k-dmg', solo(A,L,tgt,['R'],{packs:0}), solo(B,L,tgt,['R'],{packs:0}))
+   +metric(`Damage &middot; with ${n} Packmates`,'k-dmg', solo(A,L,tgt,['R']), solo(B,L,tgt,['R']))
+   +metric(`Damage &middot; during W (${n+2} Packmates, +22% AD)`,'k-dmg', solo(A,L,tgt,['W','R']), solo(B,L,tgt,['W','R']))
+   +metric('Shield &middot; recast after a takedown','k-shield', shield(A), shield(B))
+   +metricCD(ab.cd[i],A.ah,B.ah);
+  if(A.axiom || B.axiom){
+    // Axiom Arc "Flux": takedown refunds 10% (+0.25% per Lethality) of R's total cooldown
+    const ref = T => [{k:'item', v:T.axiom ? ab.cd[i]/(1+T.ah/100)*(0.10+0.0025*T.leth) : 0, t:'Axiom Arc refund'}];
+    body += metric('Cooldown refunded on takedown (Axiom Arc)','k-cd', ref(A), ref(B), {fmt:r1,unit:'s'});
+  }
+  return box('R',ab.name,'Dash to a champion &middot; each Packmate deals 10% of the damage &middot; 99% slow 0.25s &middot; Mana '+ab.mana[i],rankPicker(ab),body);
+}
+
+// ---- item icons for a build ----
+function itemIconsHTML(b){
+  const its = ITEMS.filter(it=>chk(b+'-en-'+it.id));
+  if(!its.length) return '<span class="dim" style="font-size:11px">no items</span>';
+  return its.map(it=>{
+    const img = `<img src="${iconUrl(it)}" title="${it.name} (${it.cost.toLocaleString()}g)" alt="${it.name}">`;
+    if(it.stacks){
+      const stacks = num(b+'-'+it.id+'-stacks');
+      return `<span class="totIcon">${img}<span class="stk-badge">${stacks}</span></span>`;
+    }
+    return img;
+  }).join('');
+}
+
+// ---- champion level <-> skill order / item count ----
+// Naafiri order: max Q > E > W, with R at 6/11/16. Entry = ability leveled at that champ level.
+const SKILL = ['Q','E','W','Q','Q','R','Q','E','Q','E','R','E','E','W','W','R','W','W'];
+function ranksAtLevel(L){
+  L=clampL(L);
+  const r={Q:0,W:0,E:0,R:0};
+  for(let i=0;i<L;i++) r[SKILL[i]]++;
+  return {Q:Math.max(1,r.Q), W:Math.max(1,r.W), E:Math.max(1,r.E), R:Math.max(1,r.R)};
+}
+const LVL_BY_ITEMS = {0:1, 1:6, 2:9, 3:13, 4:16, 5:18, 6:18};
+const itemCount = b => ITEMS.reduce((n,it)=>n+((chk(b+'-en-'+it.id) && it.tier==='L')?1:0),0);
+function autoLevelFromItems(){
+  const n = Math.min(6, Math.max(itemCount('A'), itemCount('B')));
+  $('level').value = LVL_BY_ITEMS[n];
+  Object.assign(sel, ranksAtLevel(LVL_BY_ITEMS[n]));
+}
+function syncLevelUI(tgt){
+  $('lvlNum').textContent = clampL(num('level'));
+  $('lvlRanks').innerHTML = `<b>Q</b>${sel.Q} &middot; <b>W</b>${sel.W} &middot; <b>E</b>${sel.E} &middot; <b>R</b>${sel.R} &middot; <b>${packCount(num('level'))}</b> Packmates`;
+  $('tgtNote').innerHTML = (TGT[tgt.preset]
+      ? `${TGT[tgt.preset].label} preset is a rough estimate that follows the champion level &mdash; type your own numbers to switch to Custom.`
+      : 'Custom target &mdash; pick a type above to follow the champion level again.')
+    + ` Damage after armor: <b style="color:var(--A)">A ${r0(mitMult(_A,tgt)*100)}%</b> &middot; <b style="color:var(--B)">B ${r0(mitMult(_B,tgt)*100)}%</b>.`;
+}
+
+// ---- combos & sustained output ----
+const COMBOS = [
+  {id:'poke',  title:'Poke &middot; Q &rarr; Q',
+   desc:'Both Darkin Daggers on the same target (recast ~1s later). Packmates leap in for 2 bites each. Only two hits, so Electrocute does not proc.',
+   steps:['Q','P:1','tick:2','Q','P:1']},
+  {id:'trade', title:'Short trade &middot; Q &rarr; E &rarr; AA &rarr; Q',
+   desc:'Dagger, dash in, one basic attack (+ Profane Hydra active if owned), then the second dagger on the bleeding target. Packmates land 3 bites each.',
+   steps:['Q','P:1','E','AA','H','P:1','tick:3','Q','P:1']},
+  {id:'allin', title:'All-in &middot; R &rarr; AA &rarr; Q &rarr; E &rarr; AA &rarr; Q',
+   desc:'Hounds&apos; Pursuit without The Call of the Pack. Packmates hit with R, then land 4 bites each. Every item proc and rune fires once.',
+   steps:['R','AA','H','P:1','Q','P:1','E','tick:2','AA','P:1','Q','P:1']},
+  {id:'burst', title:'Full burst &middot; W &rarr; R &rarr; AA &rarr; Q &rarr; E &rarr; AA &rarr; Q',
+   desc:'Same all-in with The Call of the Pack first: +22% AD and 2 extra Packmates for the whole combo.',
+   steps:['W','R','AA','H','P:1','Q','P:1','E','tick:2','AA','P:1','Q','P:1']},
+];
+const comboSim = (id,T,L,tgt) => sim(T,L,tgt,COMBOS.find(c=>c.id===id).steps);
+
+function dpsCalc(T, L, tgt){
+  const Q=ABILITIES.Q, E=ABILITIES.E, qi=sel.Q-1, ei=sel.E-1;
+  const m = mitMult(T, tgt, T.cleaver?5:0);          // Black Cleaver fully stacked in a long fight
+  const bad = T.bad + (T.keystone==='conq' ? 12*0.6*lvlScale(1.8,4,L) : 0);   // Conqueror fully stacked
+  const ad = T.baseAD + bad;
+  const qCD = Q.cd[qi]/(1+T.ah/100), eCD = E.cd[ei]/(1+T.ah/100);
+  const MISS = 0.5;                                  // Q recast bonus valued at 50% missing health
+  const qBase = Q.dmg.base[qi] + Q.bleed.base[qi] + Q.bonus.base[qi]*(1+MISS);
+  const qAD   = (Q.dmg.ad + Q.bleed.ad + Q.bonus.ad*(1+2.5*MISS))*bad;
+  const eBase = E.dash.base[ei] + E.flurry.base[ei], eAD = (E.dash.ad + E.flurry.ad)*bad;
+  const n = packCount(L);
+  const preyShare = Math.min(1, (2/qCD + 1/eCD)/T.as);   // share of bites empowered by Prey Drive
+  const bite = (packBase(L) + PACK_AD*bad)*(1+(PREY-1)*preyShare);
+  const r = {
+    qBase:qBase*m/qCD, qAD:qAD*m/qCD, eBase:eBase*m/eCD, eAD:eAD*m/eCD,
+    aa:ad*(1+T.crit/100*CRIT_BONUS)*T.as*m, pack:n*bite*T.as*m,
+    healBase:Q.heal.base[qi]/qCD, healAD:Q.heal.ad*bad/qCD
+  };
+  r.dps = r.qBase+r.qAD+r.eBase+r.eAD+r.aa+r.pack;
+  r.hps = r.healBase+r.healAD;
+  return r;
+}
+function comboRow(label, klass, aSegs, bSegs, fmt){
+  return metric(label, klass, aSegs, bSegs, {fmt:fmt||r0});
+}
+function renderCombos(A, B, L, tgt){
+  const pctTxt = p => p>=100 ? `${r0(p)}% &mdash; kill` : `${r0(p)}%`;
+  const comboCards = COMBOS.map(c=>{
+    const a = sim(A,L,tgt,c.steps), b = sim(B,L,tgt,c.steps);
+    let rows = comboRow('Damage','k-dmg', a.dmg, b.dmg);
+    if(a.healT>0 || b.healT>0) rows += comboRow('Heal','k-heal', a.heal, b.heal);
+    if(a.shdT>0  || b.shdT>0)  rows += comboRow('Shield','k-shield', a.shd, b.shd);
+    rows += `<div class="hpline">Share of target&apos;s ${r0(tgt.hp).toLocaleString()} HP: <b style="color:var(--A)">A ${pctTxt(a.pct)}</b> &middot; <b style="color:var(--B)">B ${pctTxt(b.pct)}</b></div>`;
+    return `<div class="abox"><div class="head" style="flex-direction:column;align-items:flex-start;gap:2px">
+      <div class="aname">${c.title}</div><div class="meta">${c.desc}</div></div>${rows}</div>`;
+  }).join('');
+  const aD = dpsCalc(A,L,tgt), bD = dpsCalc(B,L,tgt);
+  const two = (d,x,y) => [{k:'base',v:d[x]},{k:'ad',v:d[y]}];
+  const dpsCard = `<div class="abox"><div class="head" style="flex-direction:column;align-items:flex-start;gap:2px">
+    <div class="aname">Sustained output / second</div>
+    <div class="meta">Per second on effective cooldowns, against the same target. Q = both daggers per cooldown with the recast bonus valued at 50% missing health. Basic attacks and ${packCount(L)} Packmates bite at ${A.as.toFixed(2)} attacks/s; Prey Drive empowers one bite per ability cast. Black Cleaver and Conqueror count as fully stacked. No item actives or one-off procs.</div></div>
+    ${comboRow('Q &middot; Damage / s','k-dmg', two(aD,'qBase','qAD'), two(bD,'qBase','qAD'), r1)}
+    ${comboRow('E &middot; Damage / s','k-dmg', two(aD,'eBase','eAD'), two(bD,'eBase','eAD'), r1)}
+    ${comboRow('Basic attacks &middot; Damage / s','k-dmg', [{k:'aa',v:aD.aa}], [{k:'aa',v:bD.aa}], r1)}
+    ${comboRow('Packmates &middot; Damage / s','k-dmg', [{k:'pack',v:aD.pack}], [{k:'pack',v:bD.pack}], r1)}
+    ${comboRow('Q &middot; Heal / s','k-heal', two(aD,'healBase','healAD'), two(bD,'healBase','healAD'), r1)}
+  </div>`;
+  return `<div class="boxgrid">${comboCards}${dpsCard}</div>`;
+}
+
+// ---- overall showdown bars ----
+function showdownBar(label, aVal, bVal, leadOverride){
+  const max = Math.max(aVal, bVal, 1e-6);
+  const min = Math.min(aVal, bVal);
+  const safeMin = Math.max(min, 1e-6);
+  const equal = Math.abs(aVal-bVal) < 1e-6;
+  const aWin = aVal > bVal;
+  const pct = (max-min)/safeMin*100;
+  const leadText = equal ? '' : (leadOverride != null ? leadOverride : (pct<10 ? r1(pct) : r0(pct)) + '%');
+  const leadPct = Math.min(50, (max-min)/max * 50);
+  const fillHTML = equal ? '' :
+    aWin ? `<div class="sd-fill A" style="right:50%; width:${leadPct}%"></div>`
+         : `<div class="sd-fill B" style="left:50%; width:${leadPct}%"></div>`;
+  return `<div class="sd-row">
+    <div class="sd-label">${label}</div>
+    <span class="sd-val A">${aWin?leadText:''}</span>
+    <div class="sd-track">${fillHTML}</div>
+    <span class="sd-val B">${!aWin&&!equal?leadText:''}</span>
+  </div>`;
+}
+function renderShowdown(A, B, L, tgt){
+  const c = (id,T) => comboSim(id,T,L,tgt).dmgT;
+  const aD = dpsCalc(A,L,tgt), bD = dpsCalc(B,L,tgt);
+  return [
+    showdownBar('Poke damage',   c('poke',A),  c('poke',B)),
+    showdownBar('Trade damage',  c('trade',A), c('trade',B)),
+    showdownBar('Burst damage',  c('burst',A), c('burst',B)),
+    showdownBar('Sustained DPS', aD.dps,       bD.dps),
+    showdownBar('Q heal / s',    aD.hps,       bD.hps),
+    showdownBar('Durability',    A.ehp,        B.ehp),
+    showdownBar('Move speed',    A.finalMS,    B.finalMS),
+    showdownBar('Gold cost',     A.cost,       B.cost, Math.abs(A.cost - B.cost).toLocaleString() + 'g'),
+  ].join('');
+}
+
+// ---- render ----
+let _A, _B;
+function render(){
+  const L=num('level');
+  const tgt=target(L);
+  const A=_A=totals('A',L), B=_B=totals('B',L);
+  ['A','B'].forEach(k=>{ const T=k==='A'?A:B;
+    const adEl=$(k+'-tad'); adEl.textContent=r0(T.ad); adEl.title=`${r0(T.baseAD)} base + ${r1(T.bad)} bonus`;
+    $(k+'-tleth').textContent=r0(T.leth);
+    $(k+'-tpen').textContent=r0(T.pen*100)+'%';
+    $(k+'-tah').textContent=r0(T.ah);
+    const el=$(k+'-tms'); el.textContent=r0(T.finalMS);
+    el.title=`${NAAFIRI.ms} base + ${r0(T.msFlat)} flat${T.ms>0?' × (1 + '+r1(T.ms)+'%)':''} = ${r0(T.rawMS)} raw${T.rawMS>415?' → soft-capped to '+r0(T.finalMS):''}`;
+    $(k+'-thp').textContent=r0(T.hp).toLocaleString();
+    $(k+'-tres').textContent=r0(T.armor)+' / '+r0(T.mr);
+    $(k+'-tcost').textContent=T.cost.toLocaleString()+'g';
+    $(k+'-items').innerHTML=itemIconsHTML(k);
+    ITEMS.filter(it=>it.stacks).forEach(it=>{ const s=$(k+'-'+it.id+'-stacks-val'); if(s) s.textContent=num(k+'-'+it.id+'-stacks'); }); });
+  $('compare').innerHTML = `<div class="boxgrid">${
+    [passiveBox(A,B,L,tgt), qBox(A,B,L,tgt), wBox(A,B,L), eBox(A,B,L,tgt), rBox(A,B,L,tgt)].join('')}</div>`;
+  // Show item-specific toggles only when the item is in at least one build
+  const either = id => chk('A-en-'+id) || chk('B-en-'+id);
+  $('row-hubris').style.display  = either('hubris')  ? '' : 'none';
+  $('row-voltaic').style.display = either('voltaic') ? '' : 'none';
+  $('row-glaive').style.display  = either('glaive')  ? '' : 'none';
+  $('showdown').innerHTML = renderShowdown(A,B,L,tgt);
+  $('combos').innerHTML = renderCombos(A,B,L,tgt);
+  document.querySelectorAll('.rankpick button').forEach(btn=>{
+    btn.onclick=()=>{ sel[btn.dataset.ab]=parseInt(btn.dataset.r); render(); };
+  });
+  // ability icons: fall back to the key letter if the image can't load
+  document.querySelectorAll('img.abicon').forEach(img=>{
+    img.onerror=()=>{ const d=document.createElement('div'); d.className='abicon'; d.textContent=img.alt; img.replaceWith(d); };
+  });
+  syncLevelUI(tgt);
+}
+document.addEventListener('input', e=>{
+  const id = e.target && e.target.id;
+  if(id==='level') Object.assign(sel, ranksAtLevel(num('level')));
+  if(id==='tgt-armor' || id==='tgt-hp') $('tgt-preset').value='custom';
+  render();
+});
+document.addEventListener('change', e=>{
+  if(e.target && typeof e.target.id==='string' && /^[AB]-en-/.test(e.target.id)) autoLevelFromItems();
+  render();
+});
+autoLevelFromItems();
+render();
+</script>
+</body>
+</html>
